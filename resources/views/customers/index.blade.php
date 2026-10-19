@@ -4,17 +4,21 @@
 @section('content')
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h4 class="mb-0"><i class="bi bi-people"></i> Data Pelanggan</h4>
-    <a href="{{ route('customers.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Pelanggan</a>
+    <div class="btn-group">
+        <a href="{{ route('dusun.index') }}" class="btn btn-outline-secondary" title="Kelola daftar dusun"><i class="bi bi-geo-alt"></i> Kelola Dusun</a>
+        <a href="{{ route('customers.by-dusun') }}" class="btn btn-outline-secondary"><i class="bi bi-diagram-3"></i> Per Dusun</a>
+        <a href="{{ route('customers.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Pelanggan</a>
+    </div>
 </div>
 
 <div class="card mb-3">
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <label class="form-label small">Cari</label>
                 <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control" placeholder="Kode / nama / telepon">
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <label class="form-label small">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Semua</option>
@@ -29,6 +33,15 @@
                     <option value="">Semua</option>
                     @foreach($packages as $p)
                         <option value="{{ $p->id }}" @selected(($filters['package_id'] ?? '') == $p->id)>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small">Dusun</label>
+                <select name="dusun" class="form-select">
+                    <option value="">Semua</option>
+                    @foreach($dusunList as $d)
+                        <option value="{{ $d }}" @selected(($filters['dusun'] ?? '') === $d)>{{ $d }}</option>
                     @endforeach
                 </select>
             </div>

@@ -5,6 +5,7 @@ namespace Tests;
 use App\Enums\CustomerStatus;
 use App\Enums\InvoiceStatus;
 use App\Models\Customer;
+use App\Models\Dusun;
 use App\Models\Invoice;
 use App\Models\Package;
 use App\Models\User;
@@ -60,12 +61,18 @@ abstract class TestCase extends BaseTestCase
             $package = $this->makePackage();
         }
 
+        $dusun = $overrides['dusun'] ?? null;
+        if ($dusun) {
+            Dusun::firstOrCreate(['name' => $dusun], ['name' => $dusun]);
+        }
+
         return Customer::create(array_merge([
             'customer_code' => 'RTW-0001',
             'barcode_token' => 'token-'.uniqid(),
             'name' => 'Budi Santoso',
             'phone' => '081234567890',
             'address' => 'Jl. Melati No. 1',
+            'dusun' => null,
             'package_id' => $package->id,
             'monthly_fee' => 150000,
             'started_at' => '2026-01-05',

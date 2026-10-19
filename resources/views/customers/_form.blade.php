@@ -56,6 +56,20 @@
         <textarea name="address" class="form-control" rows="2">{{ old('address', $customer->address ?? '') }}</textarea>
         @error('address') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
     </div>
+    <div class="col-md-6">
+        <div class="d-flex justify-content-between align-items-center">
+            <label class="form-label">Dusun</label>
+            <a href="{{ route('dusun.create') }}" class="small text-decoration-none" target="_blank"><i class="bi bi-plus-circle"></i> Tambah Dusun</a>
+        </div>
+        <select name="dusun" class="form-select @error('dusun') is-invalid @enderror">
+            <option value="">— Pilih Dusun —</option>
+            @foreach(\App\Models\Dusun::orderBy('name')->get() as $d)
+                <option value="{{ $d->name }}" @selected(old('dusun', $customer->dusun ?? '') === $d->name)>{{ $d->name }}</option>
+            @endforeach
+        </select>
+        <div class="form-text small">Pilih dari daftar agar konsisten. <a href="{{ route('dusun.index') }}">Kelola dusun</a>.</div>
+        @error('dusun') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
     <div class="col-12">
         <label class="form-label">Catatan</label>
         <textarea name="notes" class="form-control" rows="2">{{ old('notes', $customer->notes ?? '') }}</textarea>

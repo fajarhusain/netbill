@@ -31,6 +31,7 @@
                     <dt class="col-5">Mulai</dt><dd class="col-7">{{ format_date($customer->started_at) }}</dd>
                     <dt class="col-5">Jatuh Tempo</dt><dd class="col-7">Tanggal {{ $customer->due_day }}</dd>
                     <dt class="col-5">Alamat</dt><dd class="col-7">{{ $customer->address ?: '-' }}</dd>
+                    <dt class="col-5">Dusun</dt><dd class="col-7">{{ $customer->dusun ?: '-' }}</dd>
                     @if($customer->notes)<dt class="col-5">Catatan</dt><dd class="col-7">{{ $customer->notes }}</dd>@endif
                 </dl>
                 <form action="{{ route('customers.regenerate', $customer) }}" method="POST" onsubmit="return confirm('Buat ulang token barcode? Kartu lama tidak berlaku.')">

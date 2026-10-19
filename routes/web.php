@@ -6,6 +6,7 @@ use App\Http\Controllers\CashSettlementController;
 use App\Http\Controllers\CollectionVisitController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DusunController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PaymentController;
@@ -55,6 +56,7 @@ Route::middleware('auth')->group(function () {
 
 // Admin-only routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/customers/by-dusun', [CustomerController::class, 'byDusun'])->name('customers.by-dusun');
     Route::resource('customers', CustomerController::class);
     Route::post('/customers/{customer}/regenerate-barcode', [CustomerController::class, 'regenerateBarcode'])
         ->name('customers.regenerate');
@@ -63,6 +65,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::resource('packages', PackageController::class)->except(['show']);
     Route::get('/packages/{package}', [PackageController::class, 'show'])->name('packages.show');
+
+    Route::resource('dusun', DusunController::class)->except(['show']);
 
     Route::prefix('invoices')->name('invoices.')->group(function () {
         Route::get('/', [InvoiceController::class, 'index'])->name('index');

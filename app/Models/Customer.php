@@ -19,6 +19,7 @@ class Customer extends Model
         'name',
         'phone',
         'address',
+        'dusun',
         'package_id',
         'monthly_fee',
         'started_at',

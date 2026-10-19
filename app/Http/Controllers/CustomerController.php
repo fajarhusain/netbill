@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\CustomerStatus;
 use App\Models\AuditLog;
 use App\Models\Customer;
+use App\Models\Dusun;
 use App\Models\Package;
 use App\Services\CodeGeneratorService;
 use App\Services\QrCodeService;
@@ -37,6 +38,9 @@ class CustomerController extends Controller
         if ($packageId = $request->get('package_id')) {
             $query->where('package_id', $packageId);
         }
+        if ($dusun = $request->get('dusun')) {
+            $query->where('dusun', $dusun);
+        }
 
         $customers = $query->latest()->paginate(15)->withQueryString();
 
@@ -44,7 +48,45 @@ class CustomerController extends Controller
             'customers' => $customers,
             'packages' => Package::orderBy('name')->get(),
             'statuses' => CustomerStatus::cases(),
-            'filters' => $request->only(['q', 'status', 'package_id']),
+            'dusunList' => Dusun::orderBy('name')->pluck('name'),
+            'filters' => $request->only(['q', 'status', 'package_id', 'dusun']),
+        ]);
+    }
+
+    public function byDusun(Request $request)
+    {
+        $dusunList = Dusun::orderBy('name')->pluck('name');
+
+        $selectedDusun = $request->get('dusun');
+
+        $grouped = Customer::query()
+            ->with('package')
+            ->when($selectedDusun, fn ($q) => $q->where('dusun', $selectedDusun))
+            ->when($search = $request->get('q'), function ($q) use ($search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('customer_code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('dusun')
+            ->orderBy('name')
+            ->get()
+            ->groupBy(fn ($c) => $c->dusun ?: '(Tanpa Dusun)');
+
+        $summary = $dusunList->mapWithKeys(function ($dusun) {
+            $count = Customer::where('dusun', $dusun)->count();
+            $active = Customer::where('dusun', $dusun)->where('status', 'active')->count();
+
+            return [$dusun => ['total' => $count, 'active' => $active]];
+        });
+
+        return view('customers.by-dusun', [
+            'grouped' => $grouped,
+            'dusunList' => $dusunList,
+            'summary' => $summary,
+            'filters' => $request->only(['q', 'dusun']),
         ]);
     }
 
@@ -150,6 +192,7 @@ class CustomerController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
+            'dusun' => ['nullable', 'string', 'max:100', Rule::exists('dusun', 'name')],
             'package_id' => ['nullable', 'exists:packages,id'],
             'monthly_fee' => ['required', 'integer', 'min:0'],
             'started_at' => ['nullable', 'date'],
