@@ -4,7 +4,7 @@
         <label class="form-label">Pelanggan <span class="text-danger">*</span></label>
         <select name="customer_id" class="form-select" required>
             <option value="">— Pilih —</option>
-            @foreach($customers as $c)<option value="{{ $c->id }}" @selected(old('customer_id', isset($visit) ? $visit->customer_id : null)==$c->id)>{{ $c->customer_code }} — {{ $c->name }}</option>@endforeach
+            @foreach($customers as $c)<option value="{{ $c->id }}" @selected(old('customer_id', isset($visit) ? $visit->customer_id : null) ?? $customerId == $c->id)>{{ $c->customer_code }} — {{ $c->name }}</option>@endforeach
         </select>
     </div>
     <div class="col-md-3">

@@ -44,6 +44,7 @@ class CollectionVisitController extends Controller
         return view('visits.create', [
             'customers' => $customers,
             'results' => VisitResult::cases(),
+            'customerId' => request('customer_id'),
         ]);
     }
 
@@ -66,6 +67,7 @@ class CollectionVisitController extends Controller
 
     public function show(CollectionVisit $visit)
     {
+        $this->authorizeVisit($visit);
         $visit->load(['customer', 'collector']);
 
         return view('visits.show', compact('visit'));
@@ -73,6 +75,7 @@ class CollectionVisitController extends Controller
 
     public function edit(CollectionVisit $visit)
     {
+        $this->authorizeVisit($visit);
         $customers = Customer::orderBy('name')->get(['id', 'customer_code', 'name']);
 
         return view('visits.edit', compact('visit', 'customers'));
@@ -80,6 +83,7 @@ class CollectionVisitController extends Controller
 
     public function update(Request $request, CollectionVisit $visit)
     {
+        $this->authorizeVisit($visit);
         $validated = $request->validate([
             'customer_id' => ['required', 'exists:customers,id'],
             'visited_at' => ['required', 'date'],
@@ -94,8 +98,16 @@ class CollectionVisitController extends Controller
 
     public function destroy(CollectionVisit $visit)
     {
+        $this->authorizeVisit($visit);
         $visit->delete();
 
         return redirect()->route('visits.index')->with('success', 'Catatan kunjungan dihapus.');
+    }
+
+    private function authorizeVisit(CollectionVisit $visit): void
+    {
+        if (! request()->user()->isAdmin() && $visit->collector_id !== request()->user()->id) {
+            abort(403);
+        }
     }
 }

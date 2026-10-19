@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashSettlementController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\CollectionVisitController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -47,11 +48,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('visits', CollectionVisitController::class)->except(['show']);
     Route::get('/visits/{visit}', [CollectionVisitController::class, 'show'])->name('visits.show');
 
-    // Settlements — shared (collector sees own; admin sees all)
+// Settlements — shared (collector sees own; admin sees all)
     Route::resource('settlements', CashSettlementController::class)->except(['show']);
     Route::get('/settlements/{settlement}', [CashSettlementController::class, 'show'])->name('settlements.show');
     Route::post('/settlements/{settlement}/confirm', [CashSettlementController::class, 'confirm'])
         ->middleware('role:admin')->name('settlements.confirm');
+
+    // Collections — shared (collect by dusun)
+    Route::prefix('collections')->name('collections.')->group(function () {
+        Route::get('/', [CollectionController::class, 'index'])->name('index');
+        Route::get('/{dusun}', [CollectionController::class, 'show'])->name('show');
+    });
 });
 
 // Admin-only routes
@@ -82,6 +89,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/export/excel', [ReportController::class, 'exportExcel'])->name('reports.export.excel');
+    Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
 
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
 });
