@@ -139,7 +139,7 @@
 
 <div class="footer">
     Laporan dibuat pada {{ format_datetime(now()) }} WIB<br>
-    NetBill Collector — Aplikasi Penagihan RT/RW Net
+    JRC Media — Aplikasi Penagihan RT/RW Net · Dikembangkan oleh PATITECH.ID
 </div>
 </body>
 </html>

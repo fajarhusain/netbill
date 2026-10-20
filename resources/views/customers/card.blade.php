@@ -10,7 +10,7 @@
 <div class="d-flex justify-content-center">
     <div class="card border border-dark" style="width:340px;">
         <div class="card-header text-center bg-primary text-white py-2">
-            <div class="fw-bold">RT/RW NET ANDA</div>
+            <div class="fw-bold">JRC Media</div>
             <div class="small">Kartu Pelanggan</div>
         </div>
         <div class="card-body text-center">

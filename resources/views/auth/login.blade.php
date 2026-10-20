@@ -53,7 +53,9 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 1.6rem; color: #fff;
             margin: 0 auto .75rem;
+            overflow: hidden;
         }
+        .glass-card .logo-circle img { width: 100%; height: 100%; object-fit: cover; }
         .glass-card h1 { color: #fff; font-size: 1.5rem; font-weight: 700; margin: 0 0 .25rem; text-align:center; }
         .glass-card .subtitle { color: rgba(255,255,255,.8); font-size: .85rem; text-align:center; margin: 0 0 1.75rem; }
 
@@ -115,6 +117,12 @@
 
         .glass-error-msg { color: #fca5a5; font-size: .8rem; margin-top: .25rem; }
 
+        .dev-credit {
+            display: flex; align-items: center; justify-content: center; gap: .35rem;
+            margin-top: 1.5rem; color: rgba(255,255,255,.7); font-size: .72rem;
+        }
+        .dev-credit img { height: 1rem; width: auto; }
+
         @media (max-width: 480px) {
             .glass-card { padding: 2rem 1.25rem; border-radius: 20px; }
         }
@@ -128,8 +136,8 @@
 </div>
 
 <div class="glass-card">
-    <div class="logo-circle"><i class="bi bi-receipt"></i></div>
-    <h1>NetBill Collector</h1>
+    <div class="logo-circle"><img src="{{ asset('jrc-media-logo.png') }}" alt="JRC Media"></div>
+    <h1>JRC Media</h1>
     <p class="subtitle">Aplikasi Penagihan RT/RW Net</p>
 
     @if(session('error'))
@@ -157,6 +165,7 @@
         </div>
         <button type="submit" class="glass-btn"><i class="bi bi-box-arrow-in-right me-1"></i> Masuk</button>
     </form>
+    <div class="dev-credit">Dikembangkan oleh <img src="{{ asset('patitech-logo.png') }}" alt="PATITECH.ID"> PATITECH.ID</div>
 </div>
 </body>
 </html>

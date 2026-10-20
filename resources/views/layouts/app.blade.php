@@ -7,9 +7,9 @@
     <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="NetBill">
+    <meta name="apple-mobile-web-app-title" content="JRC Media">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <title>@yield('title', 'NetBill Collector')</title>
+    <title>@yield('title', 'JRC Media')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -54,6 +54,7 @@
             border-bottom: 1px solid rgba(255,255,255,.08);
         }
         .nb-sidebar .sidebar-brand i { font-size: 1.3rem; }
+        .nb-sidebar .sidebar-brand img { height: 1.8rem; width: 1.8rem; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .nb-sidebar .sidebar-nav { flex: 1; padding: .75rem .5rem; }
         .nb-sidebar .sidebar-section { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: .75rem 1rem .25rem; font-weight: 700; }
         .nb-sidebar .sidebar-link {
@@ -66,6 +67,8 @@
         .nb-sidebar .sidebar-link:hover { background: rgba(255,255,255,.06); color: #fff; }
         .nb-sidebar .sidebar-link.active { background: var(--nb-primary); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,.35); }
         .nb-sidebar .sidebar-footer { padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,.08); }
+        .nb-sidebar .dev-credit { display: flex; align-items: center; justify-content: center; gap: .35rem; padding: .6rem 0 0; color: #64748b; font-size: .7rem; }
+        .nb-sidebar .dev-credit img { height: 1rem; width: auto; }
         .nb-sidebar .sidebar-user { display: flex; align-items: center; gap: .65rem; }
         .nb-sidebar .sidebar-user .avatar {
             width: 36px; height: 36px; border-radius: 50%;
@@ -105,6 +108,7 @@
         }
         .nb-topbar .brand-mobile { font-weight: 800; font-size: 1.1rem; color: var(--nb-text); text-decoration: none; display: flex; align-items: center; gap: .35rem; }
         .nb-topbar .brand-mobile i { color: var(--nb-primary); }
+        .nb-topbar .brand-mobile img { height: 1.5rem; width: 1.5rem; object-fit: cover; border-radius: 5px; }
         .nb-topbar .spacer { flex: 1; }
         .nb-topbar .icon-btn {
             color: var(--nb-muted); background: #f1f5f9; border: 0;
@@ -214,7 +218,7 @@
 @if($isAdmin)
 <nav class="nb-sidebar no-print" id="adminSidebar">
     <a class="sidebar-brand" href="{{ route('dashboard') }}">
-        <i class="bi bi-receipt"></i> <span>NetBill</span>
+        <img src="{{ asset('jrc-media-logo.png') }}" alt="JRC Media"> <span>JRC Media</span>
     </a>
     <div class="sidebar-nav">
         <div class="sidebar-section">Menu Utama</div>
@@ -244,6 +248,7 @@
             </div>
             <a href="{{ route('logout') }}" onclick="event.preventDefault();document.getElementById('logout-form').submit();" class="icon-btn" style="background:rgba(255,255,255,.1);color:#fff;" title="Keluar"><i class="bi bi-box-arrow-right"></i></a>
         </div>
+        <div class="dev-credit">Dikembangkan oleh <img src="{{ asset('patitech-logo.png') }}" alt="PATITECH.ID"> PATITECH.ID</div>
     </div>
 </nav>
 <div class="nb-sidebar-overlay no-print" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -253,9 +258,9 @@
 <nav class="nb-topbar no-print">
     @if($isAdmin)
     <button class="nb-burger d-lg-none" onclick="openSidebar()"><i class="bi bi-list"></i></button>
-    <a class="brand-mobile d-lg-none" href="{{ route('dashboard') }}"><i class="bi bi-receipt"></i> NetBill</a>
+    <a class="brand-mobile d-lg-none" href="{{ route('dashboard') }}"><img src="{{ asset('jrc-media-logo.png') }}" alt="JRC Media"> JRC Media</a>
     @else
-    <a class="brand-mobile" href="{{ route('dashboard') }}"><i class="bi bi-receipt"></i> NetBill</a>
+    <a class="brand-mobile" href="{{ route('dashboard') }}"><img src="{{ asset('jrc-media-logo.png') }}" alt="JRC Media"> JRC Media</a>
     @endif
 
     <div class="spacer"></div>

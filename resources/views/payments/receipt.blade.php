@@ -21,10 +21,10 @@
 @php
     $waPhone = preg_replace('/[^0-9]/', '', $payment->customer->phone ?? '');
     if (str_starts_with($waPhone, '0')) { $waPhone = '62' . substr($waPhone, 1); }
-    $waText = "Bukti Pembayaran RT/RW Net\nNo: {$payment->transaction_number}\nNama: {$payment->customer->name}\nTotal: " . format_rupiah($payment->amount_received) . "\nMetode: {$payment->payment_method->label()}\nStatus: " . ($payment->isCancelled() ? 'DIBATALKAN' : 'BERHASIL');
+    $waText = "Bukti Pembayaran JRC Media\nNo: {$payment->transaction_number}\nNama: {$payment->customer->name}\nTotal: " . format_rupiah($payment->amount_received) . "\nMetode: {$payment->payment_method->label()}\nStatus: " . ($payment->isCancelled() ? 'DIBATALKAN' : 'BERHASIL');
 @endphp
 <div class="receipt">
-    <div class="center bold">RT/RW NET ANDA</div>
+    <div class="center bold">JRC Media</div>
     <div class="center" style="font-size:11px;">BUKTI PEMBAYARAN</div>
     <div class="sep"></div>
     <div class="row"><span>No. Transaksi</span><span class="bold">{{ $payment->transaction_number }}</span></div>
