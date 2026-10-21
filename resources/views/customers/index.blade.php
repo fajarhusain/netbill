@@ -7,6 +7,7 @@
     <div class="btn-group">
         <a href="{{ route('dusun.index') }}" class="btn btn-outline-secondary" title="Kelola daftar dusun"><i class="bi bi-geo-alt"></i> Kelola Dusun</a>
         <a href="{{ route('customers.by-dusun') }}" class="btn btn-outline-secondary"><i class="bi bi-diagram-3"></i> Per Dusun</a>
+        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel</button>
         <a href="{{ route('customers.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Pelanggan</a>
     </div>
 </div>
@@ -73,10 +74,10 @@
                         <a href="{{ route('customers.show', $c) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
                         <a href="{{ route('customers.card', $c) }}" class="btn btn-sm btn-outline-primary" title="Kartu QR"><i class="bi bi-qr-code"></i></a>
                         <a href="{{ route('customers.edit', $c) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
-                        <form action="{{ route('customers.destroy', $c) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus pelanggan ini?')">
+                        <form action="{{ route('customers.destroy', $c) }}" method="POST" class="d-inline" id="deleteForm-{{ $c->id }}">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                         </form>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteCustomer({{ $c->id }}, '{{ addslashes($c->name) }}')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>
             @empty
@@ -89,4 +90,46 @@
     <div class="card-footer bg-white">{{ $customers->links() }}</div>
     @endif
 </div>
+
+<div class="modal fade" id="importModal" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<form method="POST" action="{{ route('customers.import') }}" enctype="multipart/form-data">@csrf
+    <div class="modal-header"><h5 class="modal-title"><i class="bi bi-file-earmark-arrow-up"></i> Import Pelanggan dari Excel</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="alert alert-info small mb-3">
+            <i class="bi bi-info-circle"></i> Unduh template terlebih dahulu, isi data pelanggan, lalu unggah kembali.
+            Format mendukung <strong>.xlsx</strong>, <strong>.xls</strong>, dan <strong>.csv</strong>.
+        </div>
+        <a href="{{ route('customers.import.template') }}" class="btn btn-outline-primary btn-sm mb-3"><i class="bi bi-download"></i> Unduh Template Excel</a>
+        <label class="form-label">Pilih File <span class="text-danger">*</span></label>
+        <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+        <div class="form-text small mt-2">
+            Kolom: <strong>nama</strong> (wajib), kode, telepon, alamat, dusun, paket, <strong>tarif</strong> (wajib),
+            tanggal_mulai, tanggal_jatuh_tempo, status, catatan.
+        </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-success"><i class="bi bi-upload"></i> Import</button></div>
+</form></div></div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmDeleteCustomer(id, name) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Hapus Pelanggan?',
+        html: 'Pelanggan <strong>' + name + '</strong> akan dihapus permanen.<br>Pelanggan dengan transaksi pembayaran tidak dapat dihapus.',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#64748b',
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('deleteForm-' + id).submit();
+        }
+    });
+}
+</script>
+@endpush

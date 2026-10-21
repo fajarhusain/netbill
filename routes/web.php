@@ -64,6 +64,8 @@ Route::middleware('auth')->group(function () {
 // Admin-only routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/customers/by-dusun', [CustomerController::class, 'byDusun'])->name('customers.by-dusun');
+    Route::get('/customers/import/template', [CustomerController::class, 'importTemplate'])->name('customers.import.template');
+    Route::post('/customers/import', [CustomerController::class, 'import'])->name('customers.import');
     Route::resource('customers', CustomerController::class);
     Route::post('/customers/{customer}/regenerate-barcode', [CustomerController::class, 'regenerateBarcode'])
         ->name('customers.regenerate');
@@ -81,6 +83,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/', [InvoiceController::class, 'store'])->name('store');
         Route::get('/{invoice}', [InvoiceController::class, 'show'])->name('show');
         Route::post('/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('cancel');
+        Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->name('destroy');
     });
 
     Route::resource('users', UserController::class)->except(['show']);

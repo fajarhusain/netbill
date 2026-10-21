@@ -11,6 +11,8 @@
         <a href="{{ route('customers.card', $customer) }}" class="btn btn-outline-primary"><i class="bi bi-qr-code"></i> Kartu</a>
         <a href="{{ route('customers.edit', $customer) }}" class="btn btn-outline-warning"><i class="bi bi-pencil"></i> Edit</a>
         <a href="{{ route('scan.customer', $customer) }}" class="btn btn-success"><i class="bi bi-cash"></i> Tagih/Bayar</a>
+        <form action="{{ route('customers.destroy', $customer) }}" method="POST" id="deleteForm" class="d-inline">@csrf @method('DELETE')</form>
+        <button type="button" class="btn btn-outline-danger" onclick="confirmDeleteCustomer()"><i class="bi bi-trash"></i> Hapus</button>
     </div>
 </div>
 
@@ -87,3 +89,24 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmDeleteCustomer() {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Hapus Pelanggan?',
+        html: 'Pelanggan <strong>{{ addslashes($customer->name) }}</strong> akan dihapus permanen.<br>Pelanggan dengan transaksi pembayaran tidak dapat dihapus.',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#64748b',
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('deleteForm').submit();
+        }
+    });
+}
+</script>
+@endpush

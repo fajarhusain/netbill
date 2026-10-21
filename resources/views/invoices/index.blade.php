@@ -44,7 +44,13 @@
     <td>{{ format_rupiah($inv->amount) }}</td>
     <td class="{{ $inv->balance() > 0 ? 'text-danger' : '' }}">{{ format_rupiah($inv->balance()) }}</td>
     <td><span class="badge {{ $inv->status->badgeClass() }}">{{ $inv->status->label() }}</span></td>
-    <td class="text-end"><a href="{{ route('invoices.show', $inv) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a></td>
+    <td class="text-end">
+        <a href="{{ route('invoices.show', $inv) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+        @if($inv->allocations_count == 0)
+        <form action="{{ route('invoices.destroy', $inv) }}" method="POST" class="d-inline" id="deleteForm-{{ $inv->id }}">@csrf @method('DELETE')</form>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteInvoice({{ $inv->id }}, '{{ $inv->invoice_number }}')"><i class="bi bi-trash"></i></button>
+        @endif
+    </td>
 </tr>
 @empty
 <tr><td colspan="7" class="text-center text-muted py-4">Belum ada tagihan.</td></tr>
@@ -55,3 +61,24 @@
 @if($invoices->hasPages())<div class="card-footer bg-white">{{ $invoices->links() }}</div>@endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmDeleteInvoice(id, number) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Hapus Tagihan?',
+        html: 'Tagihan <strong>' + number + '</strong> akan dihapus permanen.<br>Tindakan ini tidak dapat dibatalkan.',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#64748b',
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('deleteForm-' + id).submit();
+        }
+    });
+}
+</script>
+@endpush

@@ -126,6 +126,32 @@ class InvoiceService
         });
     }
 
+    public function delete(Invoice $invoice, int $userId): void
+    {
+        if ($invoice->allocations()->exists()) {
+            throw new RuntimeException('Tagihan yang sudah memiliki pembayaran tidak dapat dihapus. Batalkan transaksi pembayaran terlebih dahulu.');
+        }
+
+        DB::transaction(function () use ($invoice, $userId) {
+            AuditLog::record(
+                userId: $userId,
+                action: 'invoice.deleted',
+                entityType: 'invoice',
+                entityId: $invoice->id,
+                old: [
+                    'invoice_number' => $invoice->invoice_number,
+                    'customer_id' => $invoice->customer_id,
+                    'billing_period' => $invoice->billing_period,
+                    'amount' => $invoice->amount,
+                    'status' => $invoice->status->value,
+                ],
+                new: null,
+            );
+
+            $invoice->delete();
+        });
+    }
+
     private function validatePeriod(string $period): void
     {
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $period)) {

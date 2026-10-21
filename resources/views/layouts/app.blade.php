@@ -290,30 +290,20 @@
 </nav>
 
 <main class="nb-main">
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show no-print" role="alert">
-            <i class="bi bi-check-circle"></i> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if(session('info'))
-        <div class="alert alert-info alert-dismissible fade show no-print" role="alert">
-            <i class="bi bi-info-circle"></i> {{ session('info') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if(session('warning'))
-        <div class="alert alert-warning alert-dismissible fade show no-print" role="alert">
-            <i class="bi bi-exclamation-triangle"></i> {{ session('warning') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+@php
+    $flashSuccess = (string) session('success');
+    $flashError = (string) session('error');
+    $flashInfo = (string) session('info');
+    $flashWarning = (string) session('warning');
+@endphp
+@if($flashSuccess || $flashError || $flashInfo || $flashWarning)
+    <noscript>
+        @if($flashSuccess)<div class="alert alert-success alert-dismissible fade show no-print" role="alert"><i class="bi bi-check-circle"></i> {{ $flashSuccess }}</div>@endif
+        @if($flashError)<div class="alert alert-danger alert-dismissible fade show no-print" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ $flashError }}</div>@endif
+        @if($flashInfo)<div class="alert alert-info alert-dismissible fade show no-print" role="alert"><i class="bi bi-info-circle"></i> {{ $flashInfo }}</div>@endif
+        @if($flashWarning)<div class="alert alert-warning alert-dismissible fade show no-print" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ $flashWarning }}</div>@endif
+    </noscript>
+@endif
 
     @yield('content')
 </main>
@@ -339,6 +329,7 @@
 @endif
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 function openSidebar() {
     document.getElementById('adminSidebar').classList.add('show');
@@ -350,6 +341,25 @@ function closeSidebar() {
 }
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeSidebar();
+});
+
+const NB_FLASH = {
+    success: @json($flashSuccess),
+    error: @json($flashError),
+    info: @json($flashInfo),
+    warning: @json($flashWarning),
+};
+const NB_SWAL_THEME = { confirmButtonColor: '#6366f1', cancelButtonColor: '#64748b' };
+document.addEventListener('DOMContentLoaded', function () {
+    if (NB_FLASH.success) {
+        Swal.fire({ icon: 'success', title: 'Berhasil', text: NB_FLASH.success, ...NB_SWAL_THEME });
+    } else if (NB_FLASH.error) {
+        Swal.fire({ icon: 'error', title: 'Terjadi Kesalahan', text: NB_FLASH.error, ...NB_SWAL_THEME });
+    } else if (NB_FLASH.warning) {
+        Swal.fire({ icon: 'warning', title: 'Peringatan', text: NB_FLASH.warning, ...NB_SWAL_THEME });
+    } else if (NB_FLASH.info) {
+        Swal.fire({ icon: 'info', title: 'Informasi', text: NB_FLASH.info, ...NB_SWAL_THEME });
+    }
 });
 </script>
 @stack('scripts')

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CustomerStatus;
+use App\Exports\CustomerTemplateExport;
+use App\Imports\CustomerImport;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Dusun;
@@ -12,6 +14,7 @@ use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerController extends Controller
 {
@@ -163,6 +166,41 @@ class CustomerController extends Controller
         AuditLog::record(auth()->id(), 'customer.regenerate_barcode', 'customer', $customer->id, $old, ['barcode_token' => $customer->barcode_token]);
 
         return redirect()->route('customers.show', $customer)->with('success', 'Token barcode baru dibuat. Cetak ulang kartu pelanggan.');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
+        ]);
+
+        try {
+            $import = new CustomerImport(app(CodeGeneratorService::class));
+            Excel::import($import, $request->file('file'));
+
+            $created = $import->created;
+            $skipped = $import->skipped;
+
+            if ($created === 0 && $skipped > 0) {
+                return back()->with('warning', "Tidak ada pelanggan baru ditambahkan. {$skipped} baris dilewati (sudah ada / tidak valid).");
+            }
+
+            return back()->with('success', "Import selesai: {$created} pelanggan ditambahkan, {$skipped} dilewati.");
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = collect($failures)->map(function ($failure) {
+                return "Baris {$failure->row()}: ".implode(', ', $failure->errors());
+            })->take(10)->implode("\n");
+
+            return back()->with('error', "Validasi gagal:\n".$errors);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal mengimpor file: '.$e->getMessage());
+        }
+    }
+
+    public function importTemplate()
+    {
+        return Excel::download(new CustomerTemplateExport, 'template-import-pelanggan.xlsx');
     }
 
     public function card(Customer $customer, QrCodeService $qr)

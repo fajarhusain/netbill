@@ -93,4 +93,90 @@ class InvoiceTest extends TestCase
             'period' => 'invalid',
         ])->assertSessionHasErrors(['period']);
     }
+
+    public function test_admin_can_delete_invoice_without_payments(): void
+    {
+        $this->actingAsAdmin();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        $this->delete("/invoices/{$invoice->id}")->assertRedirect('/invoices');
+
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'invoice.deleted',
+            'entity_type' => 'invoice',
+            'entity_id' => $invoice->id,
+        ]);
+    }
+
+    public function test_cannot_delete_invoice_that_has_payments(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $collector = $this->collector();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        app(\App\Services\PaymentService::class)->processPayment(
+            collector: $collector,
+            customer: $customer,
+            invoiceIds: [$invoice->id],
+            amountReceived: 150000,
+            method: 'cash',
+            idempotencyKey: 'del-1',
+        );
+
+        $this->from("/invoices/{$invoice->id}")
+            ->delete("/invoices/{$invoice->id}")
+            ->assertRedirect("/invoices/{$invoice->id}")
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_collector_cannot_delete_invoice(): void
+    {
+        $this->actingAsCollector();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        $this->delete("/invoices/{$invoice->id}")->assertForbidden();
+    }
+
+    public function test_show_page_has_delete_button_when_no_payments(): void
+    {
+        $this->actingAsAdmin();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        $this->get("/invoices/{$invoice->id}")->assertOk()->assertSee('Hapus');
+    }
+
+    public function test_index_page_has_delete_button_for_invoice_without_payments(): void
+    {
+        $this->actingAsAdmin();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        $this->get('/invoices')->assertOk()->assertSee('confirmDeleteInvoice');
+    }
+
+    public function test_index_page_hides_delete_button_for_invoice_with_payments(): void
+    {
+        $this->actingAsAdmin();
+        $collector = $this->collector();
+        $customer = $this->makeCustomer();
+        $invoice = $this->makeInvoice($customer);
+
+        app(\App\Services\PaymentService::class)->processPayment(
+            collector: $collector,
+            customer: $customer,
+            invoiceIds: [$invoice->id],
+            amountReceived: 150000,
+            method: 'cash',
+            idempotencyKey: 'idx-1',
+        );
+
+        $this->get('/invoices')->assertOk()->assertDontSee('confirmDeleteInvoice(' . $invoice->id . ',');
+    }
 }

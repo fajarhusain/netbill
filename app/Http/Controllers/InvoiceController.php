@@ -15,7 +15,7 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
-        $query = Invoice::query()->with('customer');
+        $query = Invoice::query()->with('customer')->withCount('allocations');
 
         if ($period = $request->get('period')) {
             $query->where('billing_period', $period);
@@ -100,5 +100,16 @@ class InvoiceController extends Controller
         }
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Tagihan dibatalkan.');
+    }
+
+    public function destroy(Invoice $invoice)
+    {
+        try {
+            $this->invoiceService->delete($invoice, auth()->id());
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('invoices.index')->with('success', 'Tagihan berhasil dihapus.');
     }
 }

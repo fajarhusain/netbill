@@ -12,6 +12,10 @@
         @if(in_array($invoice->status->value, ['unpaid','partial']))
         <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-x-circle"></i> Batalkan</button>
         @endif
+        @if($invoice->allocations->isEmpty())
+        <form action="{{ route('invoices.destroy', $invoice) }}" method="POST" id="deleteForm" class="d-inline">@csrf @method('DELETE')</form>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDeleteInvoice()"><i class="bi bi-trash"></i> Hapus</button>
+        @endif
     </div>
 </div>
 
@@ -65,3 +69,24 @@
 </form></div></div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmDeleteInvoice() {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Hapus Tagihan?',
+        html: 'Tagihan <strong>{{ $invoice->invoice_number }}</strong> akan dihapus permanen.<br>Tindakan ini tidak dapat dibatalkan.',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#64748b',
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('deleteForm').submit();
+        }
+    });
+}
+</script>
+@endpush
