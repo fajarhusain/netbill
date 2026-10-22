@@ -19,9 +19,7 @@
 </head>
 <body>
 @php
-    $waPhone = preg_replace('/[^0-9]/', '', $payment->customer->phone ?? '');
-    if (str_starts_with($waPhone, '0')) { $waPhone = '62' . substr($waPhone, 1); }
-    $waText = "Bukti Pembayaran JRC Media\nNo: {$payment->transaction_number}\nNama: {$payment->customer->name}\nTotal: " . format_rupiah($payment->amount_received) . "\nMetode: {$payment->payment_method->label()}\nStatus: " . ($payment->isCancelled() ? 'DIBATALKAN' : 'BERHASIL');
+    $waUrl = $payment->whatsappReceiptUrl();
 @endphp
 <div class="receipt">
     <div class="center bold">JRC Media</div>
@@ -50,8 +48,11 @@
 </div>
 <div class="actions no-print">
     <button class="btn btn-print" onclick="window.print()">Cetak</button>
-    @if($waPhone && ! $payment->isCancelled())
-    <a class="btn btn-wa" target="_blank" href="https://wa.me/{{ $waPhone }}?text={{ urlencode($waText) }}"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+    @if(auth()->user()->isAdmin() || $payment->collector_id === auth()->id())
+    <a class="btn btn-print" style="background:#6366f1;" href="{{ route('payments.receipt.image', $payment) }}" target="_blank" rel="noopener">Gambar</a>
+    @endif
+    @if($waUrl && ! $payment->isCancelled())
+    <a class="btn btn-wa" target="_blank" href="{{ $waUrl }}"><i class="bi bi-whatsapp"></i> WhatsApp</a>
     @endif
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></script>

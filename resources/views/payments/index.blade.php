@@ -59,6 +59,7 @@
             <div class="nb-end">
                 <div class="fw-bold text-success">{{ format_rupiah($p->amount_received) }}</div>
                 <span class="badge {{ $p->status->badgeClass() }}">{{ $p->status->label() }}</span>
+                @if($p->receipt_image_path)<i class="bi bi-image-fill text-primary small" title="Bukti terkirim"></i>@endif
             </div>
         </a>
         @endforeach
@@ -81,6 +82,9 @@
                 <td class="text-end text-nowrap">
                     <a href="{{ route('payments.show', $p) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
                     <a href="{{ route('payments.receipt', $p) }}" class="btn btn-sm btn-outline-primary" title="Bukti"><i class="bi bi-receipt"></i></a>
+                    @if($p->receipt_image_path)
+                    <a href="{{ route('payments.receipt.image', $p) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success" title="Bukti gambar terkirim {{ format_datetime($p->receipt_sent_at) }}"><i class="bi bi-image"></i></a>
+                    @endif
                 </td>
             </tr>
             @endforeach

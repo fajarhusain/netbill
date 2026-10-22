@@ -43,9 +43,22 @@ class InvoiceController extends Controller
     public function create()
     {
         $currentPeriod = Carbon::now()->format('Y-m');
-        $customers = Customer::where('status', 'active')->orderBy('name')->get();
+        $customers = Customer::with('package')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
 
-        return view('invoices.create', compact('currentPeriod', 'customers'));
+        $customerOptions = $customers->map(fn (Customer $c) => [
+            'id' => $c->id,
+            'code' => $c->customer_code,
+            'name' => $c->name,
+            'phone' => $c->phone,
+            'dusun' => $c->dusun,
+            'package' => $c->package?->name,
+            'fee' => (int) $c->monthly_fee,
+        ])->values()->all();
+
+        return view('invoices.create', compact('currentPeriod', 'customers', 'customerOptions'));
     }
 
     public function store(Request $request)

@@ -4,15 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentService;
+use App\Services\ReceiptImageService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentController extends Controller
 {
-    public function __construct(private PaymentService $paymentService) {}
+    public function __construct(
+        private PaymentService $paymentService,
+        private ReceiptImageService $receiptImages,
+    ) {}
 
     public function index(Request $request)
     {
@@ -60,7 +66,7 @@ class PaymentController extends Controller
 
     public function show(Payment $payment)
     {
-        $payment->load(['customer.package', 'collector', 'allocations.invoice', 'cancelledBy']);
+        $payment->load(['customer.package', 'collector', 'allocations.invoice', 'cancelledBy', 'receiptSentBy']);
 
         return view('payments.show', compact('payment'));
     }
@@ -82,6 +88,75 @@ class PaymentController extends Controller
         return $pdf->download('bukti-'.$payment->transaction_number.'.pdf');
     }
 
+    public function sendReceipt(Request $request, Payment $payment)
+    {
+        $this->ensureCanManageReceipt($request, $payment);
+
+        if ($payment->isCancelled()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Transaksi dibatalkan — bukti pembayaran tidak dapat dikirim.'], 422);
+            }
+
+            return back()->with('error', 'Transaksi dibatalkan — bukti pembayaran tidak dapat dikirim.');
+        }
+
+        $payment->load(['customer.package', 'collector', 'allocations.invoice']);
+
+        $payment->forceFill([
+            'receipt_sent_at' => now(),
+            'receipt_sent_by' => $request->user()->id,
+        ]);
+
+        $payment->receipt_image_path = $this->receiptImages->store($payment);
+        $payment->save();
+
+        AuditLog::record(
+            userId: $request->user()->id,
+            action: 'payment.receipt_sent',
+            entityType: 'payment',
+            entityId: $payment->id,
+            old: null,
+            new: [
+                'transaction_number' => $payment->transaction_number,
+                'sent_at' => $payment->receipt_sent_at->toDateTimeString(),
+                'sent_by' => $payment->collector->name,
+            ],
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'image_url' => route('payments.receipt.image', $payment),
+                'download_url' => route('payments.receipt.image', ['payment' => $payment, 'download' => 1]),
+                'sent_at' => format_datetime($payment->receipt_sent_at),
+                'sent_by' => $payment->collector->name,
+                'whatsapp_url' => $payment->whatsappReceiptUrl(),
+            ]);
+        }
+
+        return back()->with('success', 'Bukti pembayaran dibuat dan siap dikirim.');
+    }
+
+    public function receiptImage(Request $request, Payment $payment)
+    {
+        $this->ensureCanManageReceipt($request, $payment);
+
+        $payment->load(['customer.package', 'collector', 'allocations.invoice']);
+
+        $path = $payment->receipt_image_path;
+        if (! $path || ! Storage::disk('local')->exists($path)) {
+            $path = $this->receiptImages->store($payment);
+            $payment->forceFill(['receipt_image_path' => $path])->save();
+        }
+
+        $filename = 'bukti-'.$payment->transaction_number.'.png';
+
+        return response(Storage::disk('local')->get($path), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="'.$filename.'"',
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+        ]);
+    }
+
     public function cancel(Request $request, Payment $payment)
     {
         $validated = $request->validate([
@@ -95,5 +170,14 @@ class PaymentController extends Controller
         }
 
         return redirect()->route('payments.show', $payment)->with('success', 'Transaksi dibatalkan. Status tagihan dikembalikan.');
+    }
+
+    private function ensureCanManageReceipt(Request $request, Payment $payment): void
+    {
+        $user = $request->user();
+
+        if (! $user->isAdmin() && $payment->collector_id !== $user->id) {
+            abort(403, 'Anda hanya dapat mengirim bukti untuk transaksi milik Anda.');
+        }
     }
 }

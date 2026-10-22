@@ -26,6 +26,9 @@ class Payment extends Model
         'cancelled_by',
         'cancelled_at',
         'cancellation_reason',
+        'receipt_image_path',
+        'receipt_sent_at',
+        'receipt_sent_by',
     ];
 
     protected function casts(): array
@@ -36,6 +39,7 @@ class Payment extends Model
             'payment_method' => PaymentMethod::class,
             'status' => PaymentStatus::class,
             'cancelled_at' => 'datetime',
+            'receipt_sent_at' => 'datetime',
         ];
     }
 
@@ -47,6 +51,11 @@ class Payment extends Model
     public function collector(): BelongsTo
     {
         return $this->belongsTo(User::class, 'collector_id');
+    }
+
+    public function receiptSentBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'receipt_sent_by');
     }
 
     public function cancelledBy(): BelongsTo
@@ -67,5 +76,35 @@ class Payment extends Model
     public function isCancelled(): bool
     {
         return $this->status === PaymentStatus::Cancelled;
+    }
+
+    public function whatsappNumber(): string
+    {
+        $phone = preg_replace('/[^0-9]/', '', $this->customer?->phone ?? '');
+
+        if (str_starts_with($phone, '0')) {
+            $phone = '62'.substr($phone, 1);
+        }
+
+        return $phone;
+    }
+
+    public function whatsappReceiptUrl(): ?string
+    {
+        $phone = $this->whatsappNumber();
+
+        if ($phone === '') {
+            return null;
+        }
+
+        $text = "Bukti Pembayaran JRC Media\n"
+            ."No: {$this->transaction_number}\n"
+            .'Nama: '.($this->customer?->name ?? '-')."\n"
+            .'Total: '.format_rupiah($this->amount_received)."\n"
+            .'Metode: '.$this->payment_method->label()."\n"
+            .'Petugas: '.($this->collector?->name ?? '-')."\n"
+            .'Tanggal: '.format_datetime($this->paid_at);
+
+        return 'https://wa.me/'.$phone.'?text='.urlencode($text);
     }
 }

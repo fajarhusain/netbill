@@ -42,13 +42,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
         Route::get('/{payment}/receipt', [PaymentController::class, 'receipt'])->name('receipt');
         Route::get('/{payment}/pdf', [PaymentController::class, 'pdf'])->name('pdf');
+        Route::post('/{payment}/send-receipt', [PaymentController::class, 'sendReceipt'])->name('send-receipt');
+        Route::get('/{payment}/receipt-image', [PaymentController::class, 'receiptImage'])->name('receipt.image');
     });
 
     // Visits — shared
     Route::resource('visits', CollectionVisitController::class)->except(['show']);
     Route::get('/visits/{visit}', [CollectionVisitController::class, 'show'])->name('visits.show');
 
-// Settlements — shared (collector sees own; admin sees all)
+    // Settlements — shared (collector sees own; admin sees all)
     Route::resource('settlements', CashSettlementController::class)->except(['show']);
     Route::get('/settlements/{settlement}', [CashSettlementController::class, 'show'])->name('settlements.show');
     Route::post('/settlements/{settlement}/confirm', [CashSettlementController::class, 'confirm'])
