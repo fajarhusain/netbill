@@ -2,8 +2,9 @@
 @section('title', 'Penagihan per Dusun')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2">
     <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Penagihan per Dusun</h5>
+    <a href="{{ route('blast.index') }}" class="btn btn-success btn-sm"><i class="bi bi-whatsapp"></i> Blast WA</a>
 </div>
 
 <div class="card bg-danger-subtle border-danger mb-3"><div class="card-body py-2">

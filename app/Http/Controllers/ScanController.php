@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\CollectionVisit;
 use App\Models\Customer;
+use App\Models\Payment;
 use App\Services\CodeGeneratorService;
 use App\Services\PaymentService;
+use App\Services\ReceiptImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
@@ -15,6 +18,7 @@ class ScanController extends Controller
     public function __construct(
         private PaymentService $paymentService,
         private CodeGeneratorService $codes,
+        private ReceiptImageService $receiptImages,
     ) {}
 
     public function index()
@@ -93,6 +97,8 @@ class ScanController extends Controller
                 idempotencyKey: $validated['idempotency_key'],
             );
 
+            $this->prepareReceipt($payment, $request->user()->id);
+
             if (! empty($validated['visit_result'])) {
                 $this->recordVisit($customer, $request, $validated['visit_result'], $validated['visit_notes'] ?? null);
             }
@@ -116,5 +122,21 @@ class ScanController extends Controller
             'result' => $result,
             'notes' => $notes,
         ]);
+    }
+
+    private function prepareReceipt(Payment $payment, int $userId): void
+    {
+        try {
+            $payment->forceFill([
+                'receipt_sent_at' => $payment->receipt_sent_at ?? now(),
+                'receipt_sent_by' => $payment->receipt_sent_by ?? $userId,
+                'receipt_share_token' => $payment->receipt_share_token ?: Str::random(32),
+            ]);
+
+            $payment->receipt_image_path = $this->receiptImages->store($payment);
+            $payment->save();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

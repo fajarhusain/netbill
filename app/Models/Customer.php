@@ -53,6 +53,11 @@ class Customer extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function waBlastLogs(): HasMany
+    {
+        return $this->hasMany(WaBlastLog::class);
+    }
+
     public function collectionVisits(): HasMany
     {
         return $this->hasMany(CollectionVisit::class);

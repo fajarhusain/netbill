@@ -11,9 +11,11 @@ use App\Http\Controllers\DusunController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReceiptStorageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WaBlastController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -21,6 +23,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 });
+
+Route::get('/bukti/{token}', [PaymentController::class, 'publicReceiptImage'])
+    ->middleware('throttle:60,1')->name('payments.receipt.public');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -55,6 +60,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/settlements/{settlement}', [CashSettlementController::class, 'show'])->name('settlements.show');
     Route::post('/settlements/{settlement}/confirm', [CashSettlementController::class, 'confirm'])
         ->middleware('role:admin')->name('settlements.confirm');
+
+    // WhatsApp blast penagihan — shared
+    Route::prefix('blast')->name('blast.')->group(function () {
+        Route::get('/', [WaBlastController::class, 'index'])->name('index');
+        Route::post('/log', [WaBlastController::class, 'log'])->name('log');
+        Route::get('/history', [WaBlastController::class, 'history'])->name('history');
+    });
 
     // Collections — shared (collect by dusun)
     Route::prefix('collections')->name('collections.')->group(function () {
@@ -91,6 +103,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('users', UserController::class)->except(['show']);
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
     Route::post('/payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
+    Route::post('/payments/{payment}/reset-receipt', [ReceiptStorageController::class, 'resetPayment'])->name('payments.reset-receipt');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
@@ -98,4 +111,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
 
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
+
+    Route::prefix('receipts/storage')->name('receipts.')->group(function () {
+        Route::get('/', [ReceiptStorageController::class, 'index'])->name('storage');
+        Route::post('/reset', [ReceiptStorageController::class, 'reset'])->name('storage.reset');
+        Route::post('/regenerate', [ReceiptStorageController::class, 'regenerate'])->name('storage.regenerate');
+    });
 });

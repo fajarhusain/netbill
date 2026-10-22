@@ -19,7 +19,8 @@
 </head>
 <body>
 @php
-    $waUrl = $payment->whatsappReceiptUrl();
+    $publicUrl = $payment->publicReceiptUrl();
+    $waUrl = $payment->whatsappReceiptUrl($publicUrl);
 @endphp
 <div class="receipt">
     <div class="center bold">JRC Media</div>
@@ -50,6 +51,9 @@
     <button class="btn btn-print" onclick="window.print()">Cetak</button>
     @if(auth()->user()->isAdmin() || $payment->collector_id === auth()->id())
     <a class="btn btn-print" style="background:#6366f1;" href="{{ route('payments.receipt.image', $payment) }}" target="_blank" rel="noopener">Gambar</a>
+    @endif
+    @if($publicUrl)
+    <button type="button" class="btn btn-print" style="background:#0ea5e9;" onclick="navigator.clipboard.writeText('{{ $publicUrl }}').then(()=>{this.textContent='Link tersalin';})">Salin Link</button>
     @endif
     @if($waUrl && ! $payment->isCancelled())
     <a class="btn btn-wa" target="_blank" href="{{ $waUrl }}"><i class="bi bi-whatsapp"></i> WhatsApp</a>

@@ -177,7 +177,7 @@ class ReceiptImageService
         $y += 26 * $s;
 
         $sentAt = $payment->receipt_sent_at ?? now();
-        $text('Dikirim oleh '.$payment->collector->name.' • '.format_datetime($sentAt), 10 * $s, $primary, 'center', true, $y);
+        $text('Dibuat oleh '.$payment->collector->name.' • '.format_datetime($sentAt), 10 * $s, $primary, 'center', true, $y);
         $y += 20 * $s;
 
         return $ops;

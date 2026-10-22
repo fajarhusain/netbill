@@ -12,6 +12,7 @@ use App\Services\ReceiptImageService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -74,6 +75,7 @@ class PaymentController extends Controller
     public function receipt(Payment $payment)
     {
         $payment->load(['customer.package', 'collector', 'allocations.invoice']);
+        $payment->ensureReceiptShareToken();
 
         return view('payments.receipt', compact('payment'));
     }
@@ -107,6 +109,7 @@ class PaymentController extends Controller
             'receipt_sent_by' => $request->user()->id,
         ]);
 
+        $payment->receipt_share_token = $payment->receipt_share_token ?: Str::random(32);
         $payment->receipt_image_path = $this->receiptImages->store($payment);
         $payment->save();
 
@@ -124,13 +127,7 @@ class PaymentController extends Controller
         );
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'image_url' => route('payments.receipt.image', $payment),
-                'download_url' => route('payments.receipt.image', ['payment' => $payment, 'download' => 1]),
-                'sent_at' => format_datetime($payment->receipt_sent_at),
-                'sent_by' => $payment->collector->name,
-                'whatsapp_url' => $payment->whatsappReceiptUrl(),
-            ]);
+            return response()->json($this->receiptPayload($payment));
         }
 
         return back()->with('success', 'Bukti pembayaran dibuat dan siap dikirim.');
@@ -140,21 +137,14 @@ class PaymentController extends Controller
     {
         $this->ensureCanManageReceipt($request, $payment);
 
-        $payment->load(['customer.package', 'collector', 'allocations.invoice']);
+        return $this->receiptImageResponse($payment, $request->boolean('download'));
+    }
 
-        $path = $payment->receipt_image_path;
-        if (! $path || ! Storage::disk('local')->exists($path)) {
-            $path = $this->receiptImages->store($payment);
-            $payment->forceFill(['receipt_image_path' => $path])->save();
-        }
+    public function publicReceiptImage(string $token)
+    {
+        $payment = Payment::where('receipt_share_token', $token)->firstOrFail();
 
-        $filename = 'bukti-'.$payment->transaction_number.'.png';
-
-        return response(Storage::disk('local')->get($path), 200, [
-            'Content-Type' => 'image/png',
-            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="'.$filename.'"',
-            'Cache-Control' => 'private, max-age=0, must-revalidate',
-        ]);
+        return $this->receiptImageResponse($payment, false, true);
     }
 
     public function cancel(Request $request, Payment $payment)
@@ -179,5 +169,63 @@ class PaymentController extends Controller
         if (! $user->isAdmin() && $payment->collector_id !== $user->id) {
             abort(403, 'Anda hanya dapat mengirim bukti untuk transaksi milik Anda.');
         }
+    }
+
+    private function receiptPayload(Payment $payment): array
+    {
+        $publicUrl = $payment->publicReceiptUrl();
+
+        return [
+            'image_url' => route('payments.receipt.image', $payment),
+            'public_url' => $publicUrl,
+            'download_url' => route('payments.receipt.image', ['payment' => $payment, 'download' => 1]),
+            'sent_at' => format_datetime($payment->receipt_sent_at),
+            'sent_by' => $payment->collector->name,
+            'filename' => 'bukti-'.$payment->transaction_number.'.png',
+            'whatsapp_url' => $payment->whatsappReceiptUrl($publicUrl),
+            'share_text' => $this->receiptShareText($payment, $publicUrl),
+        ];
+    }
+
+    private function receiptShareText(Payment $payment, ?string $publicUrl): string
+    {
+        $text = "Bukti Pembayaran JRC Media\n"
+            ."No: {$payment->transaction_number}\n"
+            ."Nama: {$payment->customer->name}\n"
+            .'Total: '.format_rupiah($payment->amount_received)."\n"
+            .'Metode: '.$payment->payment_method->label()."\n"
+            .'Tanggal: '.format_datetime($payment->paid_at);
+
+        if ($publicUrl) {
+            $text .= "\n\nLihat bukti: ".$publicUrl;
+        }
+
+        return $text;
+    }
+
+    private function receiptImageResponse(Payment $payment, bool $download = false, bool $public = false)
+    {
+        $payment->load(['customer.package', 'collector', 'allocations.invoice']);
+
+        $path = $payment->receipt_image_path;
+        if (! $path || ! Storage::disk('local')->exists($path)) {
+            if (! $payment->receipt_sent_at) {
+                $payment->forceFill([
+                    'receipt_sent_at' => now(),
+                    'receipt_sent_by' => $payment->collector_id,
+                ]);
+            }
+
+            $path = $this->receiptImages->store($payment);
+            $payment->forceFill(['receipt_image_path' => $path])->save();
+        }
+
+        $filename = 'bukti-'.$payment->transaction_number.'.png';
+
+        return response(Storage::disk('local')->get($path), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => ($download ? 'attachment' : 'inline').'; filename="'.$filename.'"',
+            'Cache-Control' => $public ? 'public, max-age=86400' : 'private, max-age=0, must-revalidate',
+        ]);
     }
 }

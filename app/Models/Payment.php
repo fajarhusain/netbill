@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Payment extends Model
 {
@@ -29,6 +30,7 @@ class Payment extends Model
         'receipt_image_path',
         'receipt_sent_at',
         'receipt_sent_by',
+        'receipt_share_token',
     ];
 
     protected function casts(): array
@@ -78,6 +80,24 @@ class Payment extends Model
         return $this->status === PaymentStatus::Cancelled;
     }
 
+    public function ensureReceiptShareToken(): string
+    {
+        if (! $this->receipt_share_token) {
+            $this->forceFill(['receipt_share_token' => Str::random(32)])->save();
+        }
+
+        return $this->receipt_share_token;
+    }
+
+    public function publicReceiptUrl(): ?string
+    {
+        if (! $this->receipt_share_token) {
+            return null;
+        }
+
+        return route('payments.receipt.public', $this->receipt_share_token);
+    }
+
     public function whatsappNumber(): string
     {
         $phone = preg_replace('/[^0-9]/', '', $this->customer?->phone ?? '');
@@ -89,7 +109,7 @@ class Payment extends Model
         return $phone;
     }
 
-    public function whatsappReceiptUrl(): ?string
+    public function whatsappReceiptUrl(?string $imageUrl = null): ?string
     {
         $phone = $this->whatsappNumber();
 
@@ -105,6 +125,10 @@ class Payment extends Model
             .'Petugas: '.($this->collector?->name ?? '-')."\n"
             .'Tanggal: '.format_datetime($this->paid_at);
 
-        return 'https://wa.me/'.$phone.'?text='.urlencode($text);
+        if ($imageUrl) {
+            $text .= "\nBukti: ".$imageUrl;
+        }
+
+        return 'https://wa.me/'.$phone.'?text='.rawurlencode($text);
     }
 }

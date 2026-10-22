@@ -12,6 +12,7 @@
         <h5 class="mb-0"><i class="bi bi-geo-alt"></i> {{ $dusun->name }}</h5>
         <p class="text-muted small mb-0">{{ $customers->count() }} pelanggan · {{ $withArrears }} menunggak</p>
     </div>
+    <a href="{{ route('blast.index', ['dusun' => $dusun->name]) }}" class="btn btn-success btn-touch"><i class="bi bi-whatsapp"></i></a>
 </div>
 
 @if($totalArrears > 0)

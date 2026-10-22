@@ -11,7 +11,7 @@
         <a href="{{ route('payments.receipt', $payment) }}" class="btn btn-outline-primary"><i class="bi bi-receipt"></i> Lihat Bukti</a>
         <a href="{{ route('payments.pdf', $payment) }}" class="btn btn-outline-secondary"><i class="bi bi-file-pdf"></i> PDF</a>
         @if(! $payment->isCancelled() && (auth()->user()->isAdmin() || $payment->collector_id === auth()->id()))
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sendReceiptModal"><i class="bi bi-image"></i> Kirim Bukti</button>
+        <a href="#bukti" class="btn btn-success"><i class="bi bi-whatsapp"></i> Kirim Bukti</a>
         @endif
         @if(auth()->user()->isAdmin() && !$payment->isCancelled())
         <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-x-circle"></i> Batalkan</button>
@@ -62,50 +62,55 @@
 </div>
 </div>
 
-@if($payment->receipt_image_path)
-<div class="card mt-3">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+@php
+    $publicUrl = $payment->publicReceiptUrl();
+    $waUrl = $payment->isCancelled() ? null : $payment->whatsappReceiptUrl($publicUrl);
+@endphp
+
+<div class="card mt-3" id="bukti">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
         <strong><i class="bi bi-image"></i> Bukti Pembayaran (Gambar)</strong>
-        <a href="{{ route('payments.receipt.image', ['payment' => $payment, 'download' => 1]) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> Unduh</a>
+        <div class="btn-group">
+            @if($payment->receipt_image_path)
+            <a href="{{ route('payments.receipt.image', $payment) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> Buka</a>
+            @if($publicUrl)
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-link="{{ $publicUrl }}"><i class="bi bi-link-45deg"></i> Salin Link</button>
+            @endif
+            <a href="{{ route('payments.receipt.image', ['payment' => $payment, 'download' => 1]) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Unduh</a>
+            @if($waUrl)
+            <button type="button" class="btn btn-sm btn-success" id="share-image" data-image-url="{{ route('payments.receipt.image', $payment) }}" data-filename="bukti-{{ $payment->transaction_number }}.png" data-wa="{{ $waUrl }}"><i class="bi bi-whatsapp"></i> Bagikan Gambar</button>
+            <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-chat-text"></i> Kirim Link</a>
+            @endif
+            @if(auth()->user()->isAdmin())
+            <form method="POST" action="{{ route('payments.reset-receipt', $payment) }}" class="d-inline" onsubmit="return confirm('Hapus gambar bukti transaksi ini? Link publik akan dicabut.')">
+                @csrf
+                <button class="btn btn-sm btn-outline-danger" title="Reset bukti transaksi ini"><i class="bi bi-trash3"></i></button>
+            </form>
+            @endif
+            @endif
+        </div>
     </div>
     <div class="card-body">
-        <img src="{{ route('payments.receipt.image', $payment) }}" alt="Bukti pembayaran {{ $payment->transaction_number }}" class="img-fluid rounded border">
+        @if($payment->receipt_image_path)
+        <a href="{{ route('payments.receipt.image', $payment) }}" target="_blank" rel="noopener">
+            <img src="{{ route('payments.receipt.image', $payment) }}" alt="Bukti pembayaran {{ $payment->transaction_number }}" class="img-fluid rounded border">
+        </a>
         <p class="small text-muted mt-2 mb-0">
-            Dikirim {{ format_datetime($payment->receipt_sent_at) }}
+            Dibuat {{ format_datetime($payment->receipt_sent_at) }}
             @if($payment->receiptSentBy) oleh {{ $payment->receiptSentBy->name }} @endif
+            @if($publicUrl)
+            <br>Link publik: <span class="font-monospace" style="word-break:break-all">{{ $publicUrl }}</span>
+            @endif
         </p>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-image fs-1 d-block mb-2 opacity-50"></i>
+            <p class="small mb-2">Bukti gambar belum tersedia untuk transaksi ini.</p>
+            <button type="button" class="btn btn-success btn-sm" id="generate-receipt"><i class="bi bi-magic"></i> Buat Bukti Sekarang</button>
+        </div>
+        @endif
     </div>
 </div>
-@endif
-
-<div class="modal fade" id="sendReceiptModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-<form method="POST" action="{{ route('payments.send-receipt', $payment) }}" id="send-receipt-form"
-      data-existing-image="{{ $payment->receipt_image_path ? route('payments.receipt.image', $payment) : '' }}"
-      data-existing-meta="{{ $payment->receipt_image_path ? 'Dikirim '.format_datetime($payment->receipt_sent_at).' oleh '.($payment->receiptSentBy?->name ?? $payment->collector->name) : '' }}"
-      data-existing-download="{{ route('payments.receipt.image', ['payment' => $payment, 'download' => 1]) }}"
-      data-whatsapp="{{ $payment->whatsappReceiptUrl() ?? '' }}">@csrf
-<div class="modal-header"><h5 class="modal-title">Kirim Bukti Pembayaran</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body">
-    <p class="small text-muted">Bukti akan dibuat sebagai gambar dengan watermark nama penagih dan tanggal pengiriman.</p>
-    <div id="receipt-preview" class="text-center d-none mb-3">
-        <img src="" alt="Pratinjau bukti" class="img-fluid rounded border" id="receipt-preview-img">
-        <p class="small text-muted mt-2 mb-0" id="receipt-preview-meta"></p>
-    </div>
-    <div id="receipt-preview-loading" class="text-center py-3 d-none">
-        <span class="spinner-border spinner-border-sm"></span> <span class="small">Membuat bukti…</span>
-    </div>
-    <div id="receipt-preview-error" class="alert alert-danger py-2 small d-none"></div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('payments.receipt.image', ['payment' => $payment, 'download' => 1]) }}" class="btn btn-outline-secondary d-none" id="receipt-download"><i class="bi bi-download"></i> Unduh</a>
-        <a href="#" target="_blank" rel="noopener" class="btn btn-outline-success d-none" id="receipt-wa"><i class="bi bi-whatsapp"></i> Kirim via WhatsApp</a>
-    </div>
-</div>
-<div class="modal-footer">
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-    <button type="submit" class="btn btn-success" id="send-receipt-submit"><i class="bi bi-send"></i> Kirim Bukti</button>
-</div>
-</form>
-</div></div></div>
 
 <div class="modal fade" id="cancelModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
 <form method="POST" action="{{ route('payments.cancel', $payment) }}">@csrf
@@ -117,81 +122,84 @@
 </div>
 <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button><button class="btn btn-danger">Batalkan Transaksi</button></div>
 </form></div></div></div>
+@endsection
 
 @push('scripts')
 <script>
 (function () {
-    const form = document.getElementById('send-receipt-form');
-    if (!form) return;
+    const sendUrl = @json(route('payments.send-receipt', $payment));
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const generateBtn = document.getElementById('generate-receipt');
 
-    const submitBtn = document.getElementById('send-receipt-submit');
-    const loading = document.getElementById('receipt-preview-loading');
-    const preview = document.getElementById('receipt-preview');
-    const previewImg = document.getElementById('receipt-preview-img');
-    const previewMeta = document.getElementById('receipt-preview-meta');
-    const errorBox = document.getElementById('receipt-preview-error');
-    const downloadBtn = document.getElementById('receipt-download');
-    const waBtn = document.getElementById('receipt-wa');
+    document.querySelectorAll('[data-copy-link]').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const url = btn.dataset.copyLink;
+            if (!url) return;
+            try {
+                await navigator.clipboard.writeText(url);
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i> Tersalin';
+                setTimeout(() => { btn.innerHTML = original; }, 1800);
+            } catch (err) {
+                window.prompt('Salin link bukti:', url);
+            }
+        });
+    });
 
-    const existingImage = form.dataset.existingImage;
-    if (existingImage) {
-        previewImg.src = existingImage;
-        previewMeta.textContent = form.dataset.existingMeta;
-        downloadBtn.href = form.dataset.existingDownload;
-        if (form.dataset.whatsapp) {
-            waBtn.href = form.dataset.whatsapp;
-            waBtn.classList.remove('d-none');
-        }
-        preview.classList.remove('d-none');
-        downloadBtn.classList.remove('d-none');
-        submitBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Kirim Ulang';
-        submitBtn.classList.replace('btn-success', 'btn-outline-success');
+    const shareBtn = document.getElementById('share-image');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async function () {
+            const imageUrl = shareBtn.dataset.imageUrl;
+            const filename = shareBtn.dataset.filename;
+
+            try {
+                const blob = await fetch(imageUrl, { credentials: 'same-origin' }).then(r => r.blob());
+                const file = new File([blob], filename, { type: 'image/png' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Bukti Pembayaran',
+                        text: 'Bukti pembayaran JRC Media',
+                    });
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(objectUrl);
+
+                window.open(shareBtn.dataset.wa, '_blank', 'noopener');
+            } catch (err) {
+                if (err && err.name === 'AbortError') return;
+                window.open(shareBtn.dataset.wa, '_blank', 'noopener');
+            }
+        });
     }
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    if (generateBtn) {
+        generateBtn.addEventListener('click', async function () {
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Membuat…';
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengirim…';
-        loading.classList.remove('d-none');
-        errorBox.classList.add('d-none');
-
-        try {
-            const res = await fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                },
-            });
-
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.message || 'Gagal membuat bukti pembayaran.');
-
-            previewImg.src = data.image_url + '?t=' + Date.now();
-            previewMeta.textContent = 'Dikirim ' + data.sent_at + ' oleh ' + data.sent_by;
-            downloadBtn.href = data.download_url;
-
-            if (data.whatsapp_url) {
-                waBtn.href = data.whatsapp_url;
-                waBtn.classList.remove('d-none');
+            try {
+                const res = await fetch(sendUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.message || 'Gagal membuat bukti.');
+                window.location.reload();
+            } catch (err) {
+                alert(err.message);
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="bi bi-magic"></i> Buat Bukti Sekarang';
             }
-
-            preview.classList.remove('d-none');
-            downloadBtn.classList.remove('d-none');
-            submitBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Kirim Ulang';
-            submitBtn.disabled = false;
-            submitBtn.classList.replace('btn-success', 'btn-outline-success');
-        } catch (err) {
-            errorBox.textContent = err.message;
-            errorBox.classList.remove('d-none');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-send"></i> Kirim Bukti';
-        } finally {
-            loading.classList.add('d-none');
-        }
-    });
+        });
+    }
 })();
 </script>
 @endpush
-@endsection

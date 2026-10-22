@@ -229,6 +229,7 @@
         <div class="sidebar-section">Keuangan</div>
         <a href="{{ route('invoices.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'invoices.') ? 'active' : '' }}"><i class="bi bi-file-text"></i> Tagihan</a>
         <a href="{{ route('payments.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'payments.') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i> Transaksi</a>
+        <a href="{{ route('blast.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'blast.') ? 'active' : '' }}"><i class="bi bi-whatsapp"></i> Blast WA</a>
         <a href="{{ route('visits.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'visits.') ? 'active' : '' }}"><i class="bi bi-geo-alt"></i> Kunjungan</a>
         <a href="{{ route('settlements.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'settlements.') ? 'active' : '' }}"><i class="bi bi-bank"></i> Setoran</a>
 
@@ -237,6 +238,7 @@
         <a href="{{ route('dusun.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'dusun.') ? 'active' : '' }}"><i class="bi bi-geo"></i> Dusun</a>
         <a href="{{ route('reports.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'reports.') ? 'active' : '' }}"><i class="bi bi-bar-chart"></i> Laporan</a>
         <a href="{{ route('users.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'users.') ? 'active' : '' }}"><i class="bi bi-person-gear"></i> Pengguna</a>
+        <a href="{{ route('receipts.storage') }}" class="sidebar-link {{ str_starts_with($routeName, 'receipts.') ? 'active' : '' }}"><i class="bi bi-hdd-stack"></i> Penyimpanan Bukti</a>
         <a href="{{ route('audit.index') }}" class="sidebar-link {{ str_starts_with($routeName, 'audit.') ? 'active' : '' }}"><i class="bi bi-clock-history"></i> Audit Log</a>
     </div>
     <div class="sidebar-footer">
@@ -269,6 +271,7 @@
     <a href="{{ route('scan.index') }}" class="icon-btn d-none d-lg-inline-flex" title="Scan"><i class="bi bi-qr-code-scan"></i></a>
     @else
     <a href="{{ route('scan.index') }}" class="icon-btn" title="Scan"><i class="bi bi-qr-code-scan"></i></a>
+    <a href="{{ route('blast.index') }}" class="icon-btn" title="Blast WA"><i class="bi bi-whatsapp"></i></a>
     @endif
 
     <div class="dropdown">
@@ -280,7 +283,9 @@
             <li><hr class="dropdown-divider"></li>
             @if($isAdmin)
             <li class="d-lg-none"><a class="dropdown-item" href="{{ route('audit.index') }}"><i class="bi bi-clock-history"></i> Audit Log</a></li>
+            <li class="d-lg-none"><a class="dropdown-item" href="{{ route('receipts.storage') }}"><i class="bi bi-hdd-stack"></i> Penyimpanan Bukti</a></li>
             @endif
+            <li><a class="dropdown-item" href="{{ route('blast.index') }}"><i class="bi bi-whatsapp"></i> Blast WA Penagihan</a></li>
             <li><a class="dropdown-item text-danger" href="{{ route('logout') }}" onclick="event.preventDefault();document.getElementById('logout-form').submit();"><i class="bi bi-box-arrow-right"></i> Keluar</a></li>
         </ul>
     </div>
